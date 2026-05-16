@@ -7,11 +7,12 @@
  */
 import { jest } from '@jest/globals'
 import * as core from '../__fixtures__/core.js'
-import { wait } from '../__fixtures__/wait.js'
+
+const getAccessToken = jest.fn<() => Promise<string>>()
 
 // Mocks should be declared before the module being tested is imported.
 jest.unstable_mockModule('@actions/core', () => core)
-jest.unstable_mockModule('../src/wait.js', () => ({ wait }))
+jest.unstable_mockModule('../src/lib/auth.js', () => ({ getAccessToken }))
 
 // The module being tested should be imported dynamically. This ensures that the
 // mocks are used in place of any actual dependencies.
@@ -19,44 +20,61 @@ const { run } = await import('../src/main.js')
 
 describe('main.ts', () => {
   beforeEach(() => {
-    // Set the action's inputs as return values from core.getInput().
-    core.getInput.mockImplementation(() => '500')
-
-    // Mock the wait function so that it does not actually wait.
-    wait.mockImplementation(() => Promise.resolve('done!'))
+    core.getInput.mockImplementation((name: string) => {
+      const inputs: Record<string, string> = {
+        server: 'https://example.com',
+        'client-id': 'my-client-id',
+        secret: 'my-secret'
+      }
+      return inputs[name] ?? ''
+    })
   })
 
   afterEach(() => {
     jest.resetAllMocks()
   })
 
-  it('Sets the time output', async () => {
+  it('sets the token output on a successful login', async () => {
+    getAccessToken.mockResolvedValueOnce('test-bearer-token')
+
     await run()
 
-    // Verify the time output was set.
-    expect(core.setOutput).toHaveBeenNthCalledWith(
-      1,
-      'time',
-      // Simple regex to match a time string in the format HH:MM:SS.
-      expect.stringMatching(/^\d{2}:\d{2}:\d{2}/)
+    expect(core.setOutput).toHaveBeenCalledWith('token', 'test-bearer-token')
+    expect(core.info).toHaveBeenCalledWith(
+      'Successfully obtained access token from https://example.com'
     )
   })
 
-  it('Sets a failed status', async () => {
-    // Clear the getInput mock and return an invalid value.
-    core.getInput.mockClear().mockReturnValueOnce('this is not a number')
-
-    // Clear the wait mock and return a rejected promise.
-    wait
-      .mockClear()
-      .mockRejectedValueOnce(new Error('milliseconds is not a number'))
+  it('masks both the secret and the token', async () => {
+    getAccessToken.mockResolvedValueOnce('test-bearer-token')
 
     await run()
 
-    // Verify that the action was marked as failed.
-    expect(core.setFailed).toHaveBeenNthCalledWith(
-      1,
-      'milliseconds is not a number'
+    expect(core.setSecret).toHaveBeenCalledWith('my-secret')
+    expect(core.setSecret).toHaveBeenCalledWith('test-bearer-token')
+  })
+
+  it('calls setFailed when getAccessToken throws', async () => {
+    getAccessToken.mockRejectedValueOnce(
+      new Error('Failed to obtain access token: 401 Unauthorized')
     )
+
+    await run()
+
+    expect(core.setFailed).toHaveBeenCalledWith(
+      'Failed to obtain access token: 401 Unauthorized'
+    )
+    expect(core.setOutput).not.toHaveBeenCalled()
+    expect(core.info).not.toHaveBeenCalled()
+  })
+
+  it('does not call setFailed when a non-Error value is thrown', async () => {
+    // The guard `if (error instanceof Error)` silently swallows non-Error
+    // throws to avoid passing unexpected types to setFailed.
+    getAccessToken.mockRejectedValueOnce('string error')
+
+    await run()
+
+    expect(core.setFailed).not.toHaveBeenCalled()
   })
 })

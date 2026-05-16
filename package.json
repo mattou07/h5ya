@@ -1,8 +1,8 @@
 {
-  "name": "typescript-action",
-  "description": "GitHub Actions TypeScript template",
-  "version": "0.0.0",
-  "author": "",
+  "name": "h5ya",
+  "description": "GitHub Action that authenticates to the Umbraco Management API and outputs a bearer token",
+  "version": "1.0.0",
+  "author": "h5ya",
   "type": "module",
   "private": true,
   "homepage": "https://github.com/actions/typescript-action",

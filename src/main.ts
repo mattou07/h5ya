@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import { wait } from './wait.js'
+import { getAccessToken } from './lib/auth.js'
 
 /**
  * The main function for the action.
@@ -8,20 +8,20 @@ import { wait } from './wait.js'
  */
 export async function run(): Promise<void> {
   try {
-    const ms: string = core.getInput('milliseconds')
+    const server = core.getInput('server', { required: true })
+    const clientId = core.getInput('client-id', { required: true })
+    const secret = core.getInput('secret', { required: true })
 
-    // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-    core.debug(`Waiting ${ms} milliseconds ...`)
+    // Mask the secret immediately so it never appears in logs.
+    core.setSecret(secret)
 
-    // Log the current timestamp, wait, then log the new timestamp
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
+    const token = await getAccessToken(server, clientId, secret)
 
-    // Set outputs for other workflow steps to use
-    core.setOutput('time', new Date().toTimeString())
+    // Mask the token before setting it as output so it is redacted from logs.
+    core.setSecret(token)
+    core.setOutput('token', token)
+    core.info(`Successfully obtained access token from ${server}`)
   } catch (error) {
-    // Fail the workflow run if an error occurs
     if (error instanceof Error) core.setFailed(error.message)
   }
 }
