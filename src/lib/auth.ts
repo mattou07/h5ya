@@ -55,3 +55,33 @@ export async function getAccessToken(
   const data = (await response.json()) as { access_token: string }
   return data.access_token
 }
+
+/**
+ * Verifies that a bearer token is accepted by the Umbraco Management API by
+ * calling the current-user endpoint. Returns the authenticated user's name so
+ * callers can confirm which API user the credentials map to.
+ */
+export async function verifyToken(
+  server: string,
+  token: string
+): Promise<string> {
+  const base = normalizeServerUrl(server)
+  const url = `${base}/umbraco/management/api/v1/user/current`
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/json'
+    }
+  })
+
+  if (!response.ok) {
+    throw new Error(
+      `Token verification failed: ${response.status} ${response.statusText}`
+    )
+  }
+
+  const data = (await response.json()) as { name: string }
+  return data.name
+}

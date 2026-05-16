@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import { getAccessToken } from './lib/auth.js'
+import { getAccessToken, verifyToken } from './lib/auth.js'
 
 /**
  * The main function for the action.
@@ -20,7 +20,9 @@ export async function run(): Promise<void> {
     // Mask the token before setting it as output so it is redacted from logs.
     core.setSecret(token)
     core.setOutput('token', token)
-    core.info(`Successfully obtained access token from ${server}`)
+
+    const userName = await verifyToken(server, token)
+    core.info(`Successfully authenticated as "${userName}" on ${server}`)
   } catch (error) {
     if (error instanceof Error) core.setFailed(error.message)
   }

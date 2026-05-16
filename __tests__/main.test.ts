@@ -9,10 +9,14 @@ import { jest } from '@jest/globals'
 import * as core from '../__fixtures__/core.js'
 
 const getAccessToken = jest.fn<() => Promise<string>>()
+const verifyToken = jest.fn<() => Promise<string>>()
 
 // Mocks should be declared before the module being tested is imported.
 jest.unstable_mockModule('@actions/core', () => core)
-jest.unstable_mockModule('../src/lib/auth.js', () => ({ getAccessToken }))
+jest.unstable_mockModule('../src/lib/auth.js', () => ({
+  getAccessToken,
+  verifyToken
+}))
 
 // The module being tested should be imported dynamically. This ensures that the
 // mocks are used in place of any actual dependencies.
@@ -36,17 +40,19 @@ describe('main.ts', () => {
 
   it('sets the token output on a successful login', async () => {
     getAccessToken.mockResolvedValueOnce('test-bearer-token')
+    verifyToken.mockResolvedValueOnce('test-api-user')
 
     await run()
 
     expect(core.setOutput).toHaveBeenCalledWith('token', 'test-bearer-token')
     expect(core.info).toHaveBeenCalledWith(
-      'Successfully obtained access token from https://example.com'
+      'Successfully authenticated as "test-api-user" on https://example.com'
     )
   })
 
   it('masks both the secret and the token', async () => {
     getAccessToken.mockResolvedValueOnce('test-bearer-token')
+    verifyToken.mockResolvedValueOnce('test-api-user')
 
     await run()
 
