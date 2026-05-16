@@ -26,9 +26,13 @@ inputs:
 outputs:
   token:
     description: >-
-      The bearer token obtained from the Umbraco Management API. Use as
-      `Authorization: Bearer ${{ steps.<id>.outputs.token }}` in downstream
-      steps.
+      The bearer token obtained from the Umbraco Management API. The value is
+      masked in logs. Pass it to downstream steps via the outputs context using
+      Authorization: Bearer followed by the token value.
+  expires-in:
+    description: >-
+      The number of seconds until the bearer token expires, as returned by the
+      token endpoint (e.g. 299).
 
 runs:
   using: node24

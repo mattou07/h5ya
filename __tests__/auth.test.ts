@@ -56,19 +56,23 @@ describe('getAccessToken', () => {
     jest.resetAllMocks()
   })
 
-  it('returns the access token on a successful response', async () => {
+  it('returns the access token and expiry on a successful response', async () => {
     ;(global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ access_token: 'test-token', token_type: 'Bearer' })
+      json: async () => ({
+        access_token: 'test-token',
+        token_type: 'Bearer',
+        expires_in: 299
+      })
     })
 
-    const token = await getAccessToken(
+    const result = await getAccessToken(
       'https://example.com',
       'my-client-id',
       'my-secret'
     )
 
-    expect(token).toBe('test-token')
+    expect(result).toEqual({ token: 'test-token', expiresIn: 299 })
     expect(global.fetch).toHaveBeenCalledWith(
       'https://example.com/umbraco/management/api/v1/security/back-office/token',
       expect.objectContaining({
@@ -82,7 +86,7 @@ describe('getAccessToken', () => {
   it('includes client_id and client_secret in the request body', async () => {
     ;(global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ access_token: 'tok' })
+      json: async () => ({ access_token: 'tok', expires_in: 299 })
     })
 
     await getAccessToken('https://example.com', 'my-client-id', 'my-secret')
@@ -95,7 +99,7 @@ describe('getAccessToken', () => {
   it('normalises a bare hostname by prepending https:// before fetching', async () => {
     ;(global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ access_token: 'tok' })
+      json: async () => ({ access_token: 'tok', expires_in: 299 })
     })
 
     await getAccessToken('example.com', 'id', 'secret')

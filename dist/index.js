@@ -28185,6 +28185,14 @@ function error(message, properties = {}) {
     issueCommand('error', toCommandProperties(properties), message instanceof Error ? message.toString() : message);
 }
 /**
+ * Adds a warning issue
+ * @param message warning issue message. Errors will be converted to string via toString()
+ * @param properties optional properties to add to the annotation.
+ */
+function warning(message, properties = {}) {
+    issueCommand('warning', toCommandProperties(properties), message instanceof Error ? message.toString() : message);
+}
+/**
  * Writes info to log with console.log.
  * @param message info message
  */
@@ -28235,7 +28243,7 @@ async function getAccessToken(server, clientId, secret) {
         throw new Error(`Failed to obtain access token: ${response.status} ${response.statusText}`);
     }
     const data = (await response.json());
-    return data.access_token;
+    return { token: data.access_token, expiresIn: data.expires_in };
 }
 /**
  * Verifies that a bearer token is accepted by the Umbraco Management API by
@@ -28271,12 +28279,16 @@ async function run() {
         const secret = getInput('secret', { required: true });
         // Mask the secret immediately so it never appears in logs.
         setSecret(secret);
-        const token = await getAccessToken(server, clientId, secret);
+        const { token, expiresIn } = await getAccessToken(server, clientId, secret);
         // Mask the token before setting it as output so it is redacted from logs.
         setSecret(token);
         setOutput('token', token);
+        setOutput('expires-in', String(expiresIn));
+        if (expiresIn < 60) {
+            warning(`The bearer token expires in ${expiresIn}s, which may not be long enough to complete downstream steps.`);
+        }
         const userName = await verifyToken(server, token);
-        info(`Successfully authenticated as "${userName}" on ${server}`);
+        info(`Successfully authenticated as "${userName}" on ${server} (token expires in ${expiresIn}s)`);
     }
     catch (error) {
         if (error instanceof Error)

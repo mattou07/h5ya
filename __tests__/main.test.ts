@@ -8,7 +8,8 @@
 import { jest } from '@jest/globals'
 import * as core from '../__fixtures__/core.js'
 
-const getAccessToken = jest.fn<() => Promise<string>>()
+const getAccessToken =
+  jest.fn<() => Promise<{ token: string; expiresIn: number }>>()
 const verifyToken = jest.fn<() => Promise<string>>()
 
 // Mocks should be declared before the module being tested is imported.
@@ -39,25 +40,58 @@ describe('main.ts', () => {
   })
 
   it('sets the token output on a successful login', async () => {
-    getAccessToken.mockResolvedValueOnce('test-bearer-token')
+    getAccessToken.mockResolvedValueOnce({
+      token: 'test-bearer-token',
+      expiresIn: 299
+    })
     verifyToken.mockResolvedValueOnce('test-api-user')
 
     await run()
 
     expect(core.setOutput).toHaveBeenCalledWith('token', 'test-bearer-token')
+    expect(core.setOutput).toHaveBeenCalledWith('expires-in', '299')
     expect(core.info).toHaveBeenCalledWith(
-      'Successfully authenticated as "test-api-user" on https://example.com'
+      'Successfully authenticated as "test-api-user" on https://example.com (token expires in 299s)'
     )
   })
 
   it('masks both the secret and the token', async () => {
-    getAccessToken.mockResolvedValueOnce('test-bearer-token')
+    getAccessToken.mockResolvedValueOnce({
+      token: 'test-bearer-token',
+      expiresIn: 299
+    })
     verifyToken.mockResolvedValueOnce('test-api-user')
 
     await run()
 
     expect(core.setSecret).toHaveBeenCalledWith('my-secret')
     expect(core.setSecret).toHaveBeenCalledWith('test-bearer-token')
+  })
+
+  it('emits a warning when the token expiry is under 60 seconds', async () => {
+    getAccessToken.mockResolvedValueOnce({
+      token: 'test-bearer-token',
+      expiresIn: 59
+    })
+    verifyToken.mockResolvedValueOnce('test-api-user')
+
+    await run()
+
+    expect(core.warning).toHaveBeenCalledWith(
+      'The bearer token expires in 59s, which may not be long enough to complete downstream steps.'
+    )
+  })
+
+  it('does not warn when the token expiry is 60 seconds or more', async () => {
+    getAccessToken.mockResolvedValueOnce({
+      token: 'test-bearer-token',
+      expiresIn: 60
+    })
+    verifyToken.mockResolvedValueOnce('test-api-user')
+
+    await run()
+
+    expect(core.warning).not.toHaveBeenCalled()
   })
 
   it('calls setFailed when getAccessToken throws', async () => {

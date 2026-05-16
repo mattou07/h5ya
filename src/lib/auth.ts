@@ -24,13 +24,23 @@ export function normalizeServerUrl(server: string): string {
  * Obtains an OAuth2 bearer token from the Umbraco back-office token endpoint
  * using the client credentials grant.
  *
+ */
+export interface AccessTokenResult {
+  token: string
+  expiresIn: number
+}
+
+/**
+ * Obtains an OAuth2 bearer token from the Umbraco back-office token endpoint
+ * using the client credentials grant.
+ *
  * Reference: uSync.Commands.Core/Http/HttpClientExtensions.cs GetAccessToken()
  */
 export async function getAccessToken(
   server: string,
   clientId: string,
   secret: string
-): Promise<string> {
+): Promise<AccessTokenResult> {
   const base = normalizeServerUrl(server)
   const url = `${base}/umbraco/management/api/v1/security/back-office/token`
 
@@ -52,8 +62,11 @@ export async function getAccessToken(
     )
   }
 
-  const data = (await response.json()) as { access_token: string }
-  return data.access_token
+  const data = (await response.json()) as {
+    access_token: string
+    expires_in: number
+  }
+  return { token: data.access_token, expiresIn: data.expires_in }
 }
 
 /**

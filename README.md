@@ -26,16 +26,16 @@ back-office with a set of client credentials:
 
 ## Inputs
 
-| Input       | Required | Description                                                                              |
-| ----------- | -------- | ---------------------------------------------------------------------------------------- |
+| Input       | Required | Description                                                                                                 |
+| ----------- | -------- | ----------------------------------------------------------------------------------------------------------- |
 | `server`    | Yes      | Base URL of the Umbraco instance. Accepts a full URL or a bare hostname (e.g. `my-site.azurewebsites.net`). |
-| `client-id` | Yes      | The OAuth2 client ID configured in the Umbraco back-office.                              |
-| `secret`    | Yes      | The OAuth2 client secret. Should be stored as an encrypted secret.                       |
+| `client-id` | Yes      | The OAuth2 client ID configured in the Umbraco back-office.                                                 |
+| `secret`    | Yes      | The OAuth2 client secret. Should be stored as an encrypted secret.                                          |
 
 ## Outputs
 
-| Output  | Description                                                                                    |
-| ------- | ---------------------------------------------------------------------------------------------- |
+| Output  | Description                                                                                                                                                                     |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `token` | The bearer token obtained from the Umbraco Management API. The value is masked in all logs. Use as `Authorization: Bearer ${{ steps.<id>.outputs.token }}` in downstream steps. |
 
 ## Usage
@@ -108,10 +108,10 @@ steps:
 The action accepts a bare hostname and prepends `https://` automatically:
 
 ```yaml
-    with:
-      server: my-site.azurewebsites.net
-      client-id: umbraco-back-office-my-client
-      secret: ${{ secrets.UMBRACO_CLIENT_SECRET }}
+with:
+  server: my-site.azurewebsites.net
+  client-id: umbraco-back-office-my-client
+  secret: ${{ secrets.UMBRACO_CLIENT_SECRET }}
 ```
 
 ## Local development
