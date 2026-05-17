@@ -1,23 +1,38 @@
-name: The name of your action here
-description: Provide a description here
-author: Your name or organization here
-
+name: Umbraco Login
+description: >-
+  Authenticates to the Umbraco Management API using OAuth2 client credentials
+  and outputs a bearer token for downstream actions to use.
+author: h5ya
 # Add your action's branding here. This will appear on the GitHub Marketplace.
 branding:
-  icon: heart
-  color: red
+  icon: log-in
+  color: blue
 
 # Define your inputs here.
 inputs:
-  milliseconds:
-    description: Your input description here
+  server:
+    description: >-
+      The base URL of the Umbraco instance (e.g. https://my-site.com or
+      my-site.azurewebsites.net).
     required: true
-    default: '1000'
+  client-id:
+    description: The OAuth2 client ID configured in the Umbraco back-office.
+    required: true
+  secret:
+    description: The OAuth2 client secret.
+    required: true
 
 # Define your outputs here.
 outputs:
-  time:
-    description: Your output description here
+  token:
+    description: >-
+      The bearer token obtained from the Umbraco Management API. The value is
+      masked in logs. Pass it to downstream steps via the outputs context using
+      Authorization: Bearer followed by the token value.
+  expires-in:
+    description: >-
+      The number of seconds until the bearer token expires, as returned by the
+      token endpoint (e.g. 299).
 
 runs:
   using: node24
